@@ -70,7 +70,7 @@ command:  regress mpg weight
 ---------------------------------------------------------------------------------
 ```
 
-Multithreading with parallel
+Multithreading with *parallel*
 ----------------------------
 
 ``` stata
