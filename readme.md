@@ -8,6 +8,6 @@ Installation
 ============
 
 ``` stata
-. net install parallel, from(https://raw.github.com/fbittmann/dbs) replace
+. net install dbs, from(https://raw.github.com/fbittmann/dbs/stable) replace
 ```
 
