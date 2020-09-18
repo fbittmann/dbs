@@ -1,0 +1,2 @@
+v 3
+p dbs command to compute double bootstrap confidence intervals

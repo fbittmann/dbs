@@ -1,0 +1,9 @@
+v 3
+d dbs: command to compute double bootstrap confidence intervals
+d 
+d Author: Felix Bittmann, University of Bamberg, felix.bittmann@uni-bamberg.de
+d
+d Distribution-Date: 20200918
+f dbs.ado
+f dbs.sthlp
+f dbs_resampling.ado
