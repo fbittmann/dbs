@@ -1,6 +1,6 @@
 cap program drop dbs
 program define dbs, eclass
-	*! version 1.0.0  Felix Bittmann  2020-09-18
+	*! version 1.0.0  Felix Bittmann  2020-09-20
 	version 11
 	
 	*Parse command*
