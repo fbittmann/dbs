@@ -1,7 +1,7 @@
 cap program drop dbs
 program define dbs, eclass
 	*! version 1.0.0  Felix Bittmann  2020-09-18
-	version 16.1
+	version 11
 	
 	*Parse command*
 	*https://www.elwyndavies.com/stata-tips/create-a-stata-program-that-functions-as-a-prefix/
