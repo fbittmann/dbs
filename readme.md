@@ -102,4 +102,12 @@ command:  summarize mpg,  meanonly
 ```
 
 
+Citation
+============
+Thanks for citing this software as follows:
+
+> Bittmann, Felix (2020): dbs: Stata module to compute double bootstrap confidence intervals. Available from: https://github.com/fbittmann/dbs
+
+
+
 
