@@ -1,6 +1,6 @@
 cap program drop dbs_resampling
 program define dbs_resampling
-	*! version 1.0.0  Felix Bittmann  2020-09-18
+	*! version 1.0.0  Felix Bittmann  2020-09-20
 	/*This auxillary program does the resampling work so we can
 	run the entire process in a parallel fashion if desired*/
 syntax, data(str) ///
@@ -17,16 +17,19 @@ syntax, data(str) ///
 	idcluster(passthru) ///
 	]
 	
+	
+	local version : di "version " string(_caller()) ":"	//get user version
+	
 	quiet use `data', clear		//Load original dataset because parallel splits it up between instances
 	if "`seed'" != "" {
-		set seed `seed'
+		`version' set seed `seed'
 	}
 	local reps1 = ceil(`reps1' / `totalinstances')
 	local exp_total : list sizeof local(expression)
 	matrix outer = J(`reps1', `exp_total' * 2, .)		//Stores thetas and t-values
 	matrix empvalues = J(1, `exp_total', .)
 	
-	quiet `command'
+	quiet `version' `command'
 	tokenize `expression'
 	foreach NUM of numlist 1/`exp_total' {
 		matrix empvalues[1, `NUM'] = ``NUM''
@@ -40,8 +43,8 @@ syntax, data(str) ///
 				di ""
 			}
 		}		
-		bsample, `cluster' `strata' `idcluster'
-		quiet `command'
+		`version' bsample, `cluster' `strata' `idcluster'
+		quiet `version' `command'
 		tokenize `expression'
 		foreach NUM of numlist 1/`exp_total' {
 			matrix outer[`R1', (`NUM' * 2) - 1] = ``NUM''
@@ -51,8 +54,8 @@ syntax, data(str) ///
 		tempfile bsdata
 		quiet save `bsdata', replace
 		forvalues R2 = 1/`reps2' {
-			bsample, `cluster' `strata' `idcluster'
-			quiet `command'
+			`version' bsample, `cluster' `strata' `idcluster'
+			quiet `version' `command'
 			foreach NUM of numlist 1/`exp_total' {
 				matrix innervalues[`R2', `NUM'] = ``NUM''
 			}
