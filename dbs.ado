@@ -14,7 +14,8 @@ program define dbs, eclass
 	}
 	local 0: copy local left
 	local command: copy local right
-	
+	local version : di "version " string(_caller()) ":"	//get user version
+	quiet `version' set rng default	//use version default RNG
 	
 	*Continue with regular syntax*
 	syntax [anything(name=expression)], ///
@@ -55,7 +56,7 @@ program define dbs, eclass
 		di as text "          larger than 20 replications."
 		di ""
 	}
-	quiet `command'
+	quiet `version' `command'
 	if e(sample) == 1 {
 		quiet drop if e(sample) != 1
 		quiet count if e(sample)
