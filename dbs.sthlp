@@ -180,7 +180,7 @@ specified the computer might crash!
 {title:Installation & Updates}
 {pstd} Most recent files are available from Github{p_end}
 
-{phang2}{cmd:. net install dbs, from({browse "https://github.com/fbittmann/dbs"}) replace}{p_end}
+{phang2}{cmd:. net install dbs, from(https://raw.github.com/fbittmann/dbs/stable) replace}{p_end}
 
 
 {title:Author}
