@@ -96,12 +96,11 @@ when multiple threads are specified.
 		
 {phang} {opt graph} displays diagnostic quantile-quantile plots for the generated
 t-values for each statistic of interest. If the t-values deviate from a normal
-distribution the confidence intervals can be misleading. Especially the tail
-regions are of concern so deviations in these regions can create large
-bias (Hesterberg 2015: 373). Furthermore, the p-value
-for the Shapiro-Francia test is displayed. A low p-value indicates that the
-null hypothesis must be rejected and the distribution is probably not normal.
-Caution, if the number of {cmd:reps1} is low (< 150), p-values can be misleading.
+distribution the double bootstrap will produce more accurate results than the
+normal-based bootstrap CIs. Of special interest are the tails of the distribution, thus
+even small deviations in these regions legitimate the use of the double bootstrap
+approach. The Shapiro-Francia test statistics are a numerical test for normality
+and a small p-value indicates non-normality.
 
 {phang} {opt nowarn} surpresses any warning messages. Normally, warning messages
 are shown when the number of resamples is low or when the command invoked does not
