@@ -119,13 +119,14 @@ program define dbs, eclass
 		di ""
 		
 		if "`seed'" !=  "" {		//Prepare different seeds
-			local seeds ""
+			set seed `seed'
+			local allseeds ""
 			foreach i of numlist 1/`parallel' {
-				local a = `seed' + 123 * `i'
-				local seeds `seeds' `a'
+				local a = abs(round(rnormal() * 1000000))
+				local allseeds `allseeds' `a'
 			}
 		}
-		quiet parallel, seed(`seeds'): ///
+		quiet parallel, seed(`allseeds'): ///
 			dbs_resampling, data(`originaldata') reps1(`reps1') reps2(`reps2') command(`command') ///
 			totalstats(`exp_total') expression(`expression') totalinstances(`parallel') dots(0) ///
 			`strata' `cluster' `idcluster'
