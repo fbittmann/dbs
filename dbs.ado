@@ -98,7 +98,7 @@ program define dbs, eclass
 	
 	*Run a single thread*
 	if `parallel' == 1 {
-		quiet dbs_resampling, data(`originaldata') reps1(`reps1') reps2(`reps2') command(`command') ///
+		dbs_resampling, data(`originaldata') reps1(`reps1') reps2(`reps2') command(`command') ///
 			totalstats(`exp_total') expression(`expression') totalinstances(1) dots(`dots') seed(`seed') ///
 			`strata' `cluster' `idcluster'
 	}
@@ -162,7 +162,7 @@ program define dbs, eclass
 			matrix bias[1, `NUM'] = `thetameans' - empvalues[1, `NUM']
 			matrix ci_double[1, `NUM'] = empvalues[1, `NUM'] - boot_se[1, `NUM'] * `cent_upper'
 			matrix ci_double[2, `NUM'] = empvalues[1, `NUM'] - boot_se[1, `NUM'] * `cent_lower'
-			quiet sfrancia tval`col'			//Test for normality of t-values
+			quiet sfrancia tval`NUM'			//Test for normality of t-values
 			matrix sfrancia[1, `NUM'] = r(p)
 			local temp = sfrancia[1, `NUM']
 			
