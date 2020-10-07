@@ -162,7 +162,7 @@ program define dbs, eclass
 			matrix bias[1, `NUM'] = `thetameans' - empvalues[1, `NUM']
 			matrix ci_double[1, `NUM'] = empvalues[1, `NUM'] - boot_se[1, `NUM'] * `cent_upper'
 			matrix ci_double[2, `NUM'] = empvalues[1, `NUM'] - boot_se[1, `NUM'] * `cent_lower'
-			quiet sfrancia tval`col'			//Test for normality of t-values
+			quiet sfrancia tval`NUM'			//Test for normality of t-values
 			matrix sfrancia[1, `NUM'] = r(p)
 			local temp = sfrancia[1, `NUM']
 			
