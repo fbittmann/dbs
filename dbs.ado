@@ -98,7 +98,7 @@ program define dbs, eclass
 	
 	*Run a single thread*
 	if `parallel' == 1 {
-		dbs_resampling, data(`originaldata') reps1(`reps1') reps2(`reps2') command(`command') ///
+		quiet dbs_resampling, data(`originaldata') reps1(`reps1') reps2(`reps2') command(`command') ///
 			totalstats(`exp_total') expression(`expression') totalinstances(1) dots(`dots') seed(`seed') ///
 			`strata' `cluster' `idcluster'
 	}
@@ -125,7 +125,7 @@ program define dbs, eclass
 				local allseeds `allseeds' `a'
 			}
 		}
-		parallel, seed(`allseeds'): ///
+		quiet parallel, seed(`allseeds'): ///
 			dbs_resampling, data(`originaldata') reps1(`reps1') reps2(`reps2') command(`command') ///
 			totalstats(`exp_total') expression(`expression') totalinstances(`parallel') dots(0) ///
 			`strata' `cluster' `idcluster'
