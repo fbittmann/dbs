@@ -1,6 +1,6 @@
 cap program drop dbs_resampling
 program define dbs_resampling
-	*! version 1.0.0  Felix Bittmann  2020-09-20
+	*! version 1.0.1  Felix Bittmann  2020-10-07
 	/*This auxillary program does the resampling work so we can
 	run the entire process in a parallel fashion if desired*/
 syntax, data(str) ///
@@ -26,7 +26,21 @@ syntax, data(str) ///
 	}
 	local reps1 = ceil(`reps1' / `totalinstances')
 	local exp_total : list sizeof local(expression)
-	matrix outer = J(`reps1', `exp_total' * 2, .)		//Stores thetas and t-values
+	
+	*Generate unique tempfiles over all instances*
+	if `totalinstances' == 1 {
+		local iid = 1
+	}
+	else {
+		local iid = $pll_instance
+	}	
+	tempname n`iid'
+	tempfile t`iid'
+	local allvars ""
+	foreach NUM of numlist 1/`exp_total' {
+		local allvars `allvars' theta`NUM' tval`NUM'
+	}
+	postfile `n`iid'' `allvars' using `t`iid''
 	matrix empvalues = J(1, `exp_total', .)
 	
 	quiet `version' `command'
@@ -35,6 +49,7 @@ syntax, data(str) ///
 		matrix empvalues[1, `NUM'] = ``NUM''
 	}
 	forvalues R1 = 1/`reps1' {
+		matrix thetas = J(1, `exp_total', .)		//Stores thetas and t-values
 		if `dots' > 0 & mod(`R1', `dots') == 0 {
 			display "." _cont
 			local c = `c' + 1
@@ -47,7 +62,7 @@ syntax, data(str) ///
 		quiet `version' `command'
 		tokenize `expression'
 		foreach NUM of numlist 1/`exp_total' {
-			matrix outer[`R1', (`NUM' * 2) - 1] = ``NUM''
+			matrix thetas[1, `NUM'] = ``NUM''
 		}
 		
 		matrix innervalues = J(`reps2', `exp_total', .)		//Stores innerthetas
@@ -69,13 +84,14 @@ syntax, data(str) ///
 		mata: sds = sqrt(diagonal(work[2::rows(work),]))	//Compute column SDs
 		mata: st_matrix("sds", sds)
 		
+		local allres ""
 		foreach NUM of numlist 1/`exp_total' {
-			local t = (outer[`R1', (`NUM' * 2) - 1] - empvalues[1, `NUM']) / sds[`NUM', 1]
-			matrix outer[`R1', `NUM' * 2] = `t'
+			local tval = (thetas[1, `NUM'] - empvalues[1, `NUM']) / sds[`NUM', 1]
+			local allres `allres' (thetas[1, `NUM']) (`tval')
 		}
+		post `n`iid'' `allres'
 		quiet use `data', clear
 	}
-	
-	clear
-	quiet svmat double outer			//matrix to dataset
+	postclose `n`iid''
+	use `t`iid'', clear		//load postfile dataset in memory
 end
