@@ -1,6 +1,6 @@
 cap program drop dbs
 program define dbs, eclass
-	*! version 1.0.0  Felix Bittmann  2020-09-20
+	*! version 1.0.1  Felix Bittmann  2020-10-07
 	version 11
 	
 	*Parse command*
@@ -76,7 +76,6 @@ program define dbs, eclass
 	}
 	****************************************************************************
 	local exp_total : list sizeof local(expression)
-	matrix outer = J(`reps1', `exp_total' * 2, .)		//Stores thetas and t-values
 	matrix empvalues = J(1, `exp_total', .)				//Stores point estimates
 	quiet `command'
 	tokenize `expression'	
@@ -126,12 +125,15 @@ program define dbs, eclass
 				local allseeds `allseeds' `a'
 			}
 		}
-		quiet parallel, seed(`allseeds'): ///
+		parallel, seed(`allseeds'): ///
 			dbs_resampling, data(`originaldata') reps1(`reps1') reps2(`reps2') command(`command') ///
 			totalstats(`exp_total') expression(`expression') totalinstances(`parallel') dots(0) ///
 			`strata' `cluster' `idcluster'
 	}
 	
+
+	****************************************************************************
+	*From here on, the random part is done and all data are loaded in memory
 	local tcrit_lower = (100 - `level' ) / 2 
 	local tcrit_upper = 100 - `tcrit_lower'
 	matrix boot_se = J(1, `exp_total', .)
@@ -141,8 +143,8 @@ program define dbs, eclass
 	matrix bias = J(1, `exp_total', .)
 	
 	foreach NUM of numlist 1/`exp_total' {
-		local col = 2 * `NUM' - 1
-		quiet sum outer`col'	//summarize theta_stars
+		*local col = 2 * `NUM' - 1
+		quiet sum theta`NUM'	//summarize theta_stars
 		local thetameans = r(mean)
 		matrix boot_se[1, `NUM'] = r(sd)
 		local bootse = boot_se[1, `NUM']
@@ -153,21 +155,21 @@ program define dbs, eclass
 			matrix ci_double[2, `NUM'] = 0
 		}
 		else {
-			local col = `col' + 1
-			quiet centile outer`col', centile(`tcrit_lower' `tcrit_upper')
+			*local col = `col' + 1
+			quiet centile tval`NUM', centile(`tcrit_lower' `tcrit_upper')
 			local cent_lower = r(c_1)
 			local cent_upper = r(c_2)
 			matrix bias[1, `NUM'] = `thetameans' - empvalues[1, `NUM']
 			matrix ci_double[1, `NUM'] = empvalues[1, `NUM'] - boot_se[1, `NUM'] * `cent_upper'
 			matrix ci_double[2, `NUM'] = empvalues[1, `NUM'] - boot_se[1, `NUM'] * `cent_lower'
-			quiet sfrancia outer`col'			//Test for normality of t-values
+			quiet sfrancia tval`col'			//Test for normality of t-values
 			matrix sfrancia[1, `NUM'] = r(p)
 			local temp = sfrancia[1, `NUM']
 			
 			if "`graph'" != "" {
-				tempname h`col'
-				local outgraphs `outgraphs' `h`col''
-				qnorm outer`col', name(`h`col'', replace) title("``NUM''") nodraw ///
+				tempname h`NUM'
+				local outgraphs `outgraphs' `h`NUM''
+				qnorm tval`NUM', name(`h`NUM'', replace) title("``NUM''") nodraw ///
 					note("p=`temp'") ytitle("t-values")
 			}
 		}
@@ -223,12 +225,6 @@ program define dbs, eclass
 		graph combine `outgraphs'
 	}
 	if "`saving'" != "" {
-		foreach NUM of numlist 1/`exp_total' {
-			local t = (`NUM' * 2) - 1
-			rename outer`t' stat`NUM'
-			local t = `t' + 1
-			rename outer`t' tvalue`NUM'
-		}
 		save `saving'
 	}
 	quiet use `originaldata', clear
