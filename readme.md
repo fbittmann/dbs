@@ -1,5 +1,5 @@
-dbs: Stata module for computing double bootstrap confidence intervals
-=====================================================================
+dbs: Stata command for computing double bootstrap confidence intervals
+======================================================================
 Double bootstrap confidence intervals promise **more precise** results with a better nominal coverage for many applications. The package is **lightweight**, easy to use
 and very similar to the regular standard Stata bootstrap command. **Multithreading** allows the computation with multiple instances even without Stata-MP for massive
 speed gain. Please refer to the help file for details.
@@ -100,6 +100,14 @@ command:  summarize mpg,  meanonly
 ---------------------------------------------------------------------------------
 
 ```
+
+
+Citation
+============
+Thanks for citing this software as follows:
+
+> Bittmann, Felix (2020): dbs: Stata module to compute double bootstrap confidence intervals. Available from: https://github.com/fbittmann/dbs
+
 
 
 
