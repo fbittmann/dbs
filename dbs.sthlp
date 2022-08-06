@@ -20,7 +20,9 @@
 {synoptline}
 {synopt :{opt reps1(#)}}number of outer resamples; default is 100
   {p_end}
-{synopt :{opt reps2(#)}}number of inner resamples; default is 20
+{synopt :{opt reps2(#)}}number of inner resamples; default is 20; overwritten if {it:analytic} provided
+  {p_end}
+{synopt :{opt analytic(string)}}providing analytic standard error(s)
   {p_end}
 {synopt :{opt level(#)}}confidence level; default is 95
   {p_end}
@@ -70,6 +72,10 @@ resample. The total number of bootstrap samples is thus reps1 * reps2, so
 be aware of the additional computational burden. The number of inner resamples
 is usually much lower than for inner resamples and values between 20 and 100 are
 probably fine. However, choosing the ideal number is not trivial (Lee & Young 1999).
+
+{phang} {opt analytic(string)} specifies analytic standard errors for the computation
+of the t-values. This is possible if the command used provides analytic standard errors.
+The order of the analytic standard errors must be identical to the order of expressions in {it:{help exp_list}}.
 
 {phang} {opt level(#)} specifies the confidence level, as a percentage,
 for confidence intervals. The default is {cmd:level(95)} which produces
@@ -131,10 +137,14 @@ specified the computer might crash!
 {pstd}Bootstrap regression coefficients{p_end}
 {phang2}{cmd:. dbs _b[weight] _b[_cons]: regress mpg weight}{p_end}
 
+{pstd}Using analytic standard errors{p_end}
+{phang2}{cmd:. dbs _b[weight] _b[_cons], analytic(r(table)[2,1] r(table)[2,2]): regress mpg weight}{p_end}
+
 {pstd}Multithreading with {it: parallel}{p_end}
 {phang2}{cmd:. net install parallel, from(https://raw.github.com/gvegayon/parallel/stable/) replace}{p_end}
 {phang2}{cmd:. mata mata mlib index}{p_end}
 {phang2}{cmd:. dbs r(mean), reps1(5000) reps2(100) parallel(4): summarize mpg, meanonly}{p_end}
+
 
 {marker eret}{...}
 {title:Stored results}
