@@ -1,7 +1,7 @@
 cap program drop dbs
 program define dbs, eclass
-	*! version 1.0.1  Felix Bittmann  2020-10-07
-	version 11
+	*! version 1.1.0  Felix Bittmann  2022-08-06
+	version 15
 	
 	*Parse command*
 	*https://www.elwyndavies.com/stata-tips/create-a-stata-program-that-functions-as-a-prefix/
@@ -31,6 +31,7 @@ program define dbs, eclass
 		saving(str) ///
 		nowarn ///
 		PARallel(integer 1) ///
+		analytical(str) ///
 		]
 
 	ereturn clear
@@ -48,14 +49,12 @@ program define dbs, eclass
 		exit 100
 	}
 	
-	*** Warning if reps are low ***
-	if (`reps1' < 50 | `reps2' < 15) & "`warn'" == "" {
-		di ""
-		di as text "Warning:  Number of bootstrap replications is low and results might be unreliable."
-		di as text "          Unless for testing purposes, reps1 should be larger than 100 and reps2"
-		di as text "          larger than 20 replications."
-		di ""
-	}
+	*** Analytical standard errors requested ***
+	if "`analytical'" != "" {
+		local reps2 = 0
+	}	
+
+
 	quiet `version' `command'
 	if e(sample) == 1 {
 		quiet drop if e(sample) != 1
@@ -77,10 +76,12 @@ program define dbs, eclass
 	****************************************************************************
 	local exp_total : list sizeof local(expression)
 	matrix empvalues = J(1, `exp_total', .)				//Stores point estimates
-	quiet `command'
-	tokenize `expression'	
+
+	qui `version' `command'
+	*tokenize `expression'	
 	foreach NUM of numlist 1/`exp_total' {
-		matrix empvalues[1, `NUM'] = ``NUM''
+		local current_theta `: word `NUM' of `expression''
+		matrix empvalues[1, `NUM'] = `current_theta'
 		local test = empvalues[1, `NUM']
 		if missing(`test') {
 			di as error "Theta evaluates to missing for the entire sample for statistic ``NUM''"
@@ -95,17 +96,16 @@ program define dbs, eclass
 		*/ "{c +}{c -}{c -}{c -} 2 {c -}{c -}{c -}{c +}{c -}{c -}{c -} 3 {c -}{c -}{c -}" /*
 		*/  "{c +}{c -}{c -}{c -} 4 {c -}{c -}{c -}{c +}{c -}{c -}{c -} 5"
 	}
-	
 	*Run a single thread*
 	if `parallel' == 1 {
 		dbs_resampling, data(`originaldata') reps1(`reps1') reps2(`reps2') command(`command') ///
 			totalstats(`exp_total') expression(`expression') totalinstances(1) dots(`dots') seed(`seed') ///
-			`strata' `cluster' `idcluster'
+			`strata' `cluster' `idcluster' analytical(`analytical')
 	}
 	
 	*Run multiple threads*
 	else {
-		cap parallel setclusters `parallel'
+		cap parallel setclusters `parallel', force
 		if _rc != 0 {
 			di as error "Error:  cannot initialize starting 'parallel'. Please make sure to install or"
 			di as error "        update to the most recent version. Type:"
@@ -128,7 +128,7 @@ program define dbs, eclass
 		quiet parallel, seed(`allseeds'): ///
 			dbs_resampling, data(`originaldata') reps1(`reps1') reps2(`reps2') command(`command') ///
 			totalstats(`exp_total') expression(`expression') totalinstances(`parallel') dots(0) ///
-			`strata' `cluster' `idcluster'
+			`strata' `cluster' `idcluster' analytical(`analytical')
 	}
 	
 
@@ -184,8 +184,20 @@ program define dbs, eclass
 	di as text "									Reps1 = " as result "`reps1'"
 	di as text "									Reps2 = " as result "`reps2'"
 	di as text "command: `command'"
+	if "`analytical'" != "" {
+		di as text "Note: analytic standard error(s) provided (shown in brackets)"
+	}
 	foreach NUM of numlist 1/`exp_total' {
-		di as text "	_bs_`NUM': " as result "``NUM''"
+		if "`analytical'" != "" {
+			local current_theta `: word `NUM' of `expression''
+			local current_se_type `: word `NUM' of `analytical''
+			di as text "	_bs_`NUM': " as result "`current_theta' [`current_se_type']"
+		}
+		else {
+			local current_theta `: word `NUM' of `expression''
+			di as text "	_bs_`NUM': " as result "`current_theta'"
+		}
+			
 	}
 	di ""
 	di as text "{hline 10}{c TT}{hline 70}"
