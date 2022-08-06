@@ -105,7 +105,7 @@ program define dbs, eclass
 	
 	*Run multiple threads*
 	else {
-		cap parallel initialize `parallel', force
+		cap parallel setclusters `parallel', force
 		if _rc != 0 {
 			di as error "Error:  cannot initialize starting 'parallel'. Please make sure to install or"
 			di as error "        update to the most recent version. Type:"
