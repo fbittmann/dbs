@@ -1,11 +1,11 @@
 cap program drop dbs_resampling
 program define dbs_resampling
-	*! version 1.1.0  Felix Bittmann  2022-08-06
+	*! version 1.1.1  Felix Bittmann  2022-08-11
 	/*This auxillary program does the resampling work so we can
 	run the entire process in a parallel fashion if desired*/
 syntax, data(str) ///
-	reps1(int) ///
-	reps2(int) ///
+	reps(int) ///
+	repsinner(int) ///
 	command(str) ///
 	totalstats(int) ///
 	expression(str) ///
@@ -15,7 +15,8 @@ syntax, data(str) ///
 	strata(passthru) ///
 	cluster(passthru) ///
 	idcluster(passthru) ///
-	analytical(str) ///
+	analytic(str) ///
+	jackknife(str) ///
 	]
 	
 	
@@ -25,7 +26,7 @@ syntax, data(str) ///
 	if "`seed'" != "" {
 		`version' set seed `seed'
 	}
-	local reps1 = ceil(`reps1' / `totalinstances')
+	local reps = ceil(`reps' / `totalinstances')
 	local exp_total : list sizeof local(expression)
 	
 	*Generate unique tempfiles over all instances*
@@ -48,18 +49,50 @@ syntax, data(str) ///
 
 
 	quiet `version' `command'
-	*tokenize `expression'
 	foreach NUM of numlist 1/`exp_total' {
 		local current_theta `: word `NUM' of `expression''
 		matrix empvalues[1, `NUM'] = `current_theta'
 	}
 	
 	
-	*** Analytical SEs provided ***
-	if "`analytical'" != "" {
-		forvalues R1 = 1/`reps1' {
+	*** Jackknife ***
+	if "`jackknife'" != "" {
+		forvalues R1 = 1/`reps' {
 			matrix thetas = J(1, `exp_total', .)		//Stores thetas and t-values
-			matrix ses = J(1, `exp_total', .)			//Store analytical standard errors
+			matrix ses = J(1, `exp_total', .)			//Store analytic standard errors
+			if `dots' > 0 & mod(`R1', `dots') == 0 {
+				display "." _cont
+				local c = `c' + 1
+				if mod(`c', 50) == 0 {
+					di " (`R1')" _cont
+					di ""
+				}
+			}		
+			`version' bsample, `cluster' `strata' `idcluster'
+			quiet `version' jackknife `expression', `cluster' `idcluster': `command'
+			local allres ""
+			foreach NUM of numlist 1/`exp_total' {
+				local current_theta = r(table)[1,`NUM']
+				matrix thetas[1, `NUM'] = `current_theta'
+				local current_se = r(table)[2,`NUM']
+				matrix ses[1, `NUM'] = `current_se'
+				local tval = (`current_theta' - empvalues[1, `NUM']) / `current_se'
+				local allres `allres' (`current_theta') (`tval')
+			}
+			post `n`iid'' `allres'
+			quiet use `data', clear
+		}
+		postclose `n`iid''
+		use `t`iid'', clear		//load postfile dataset in memory
+	}
+		
+	
+	
+	*** analytic SEs provided ***
+	else if "`analytic'" != "" {
+		forvalues R1 = 1/`reps' {
+			matrix thetas = J(1, `exp_total', .)		//Stores thetas and t-values
+			matrix ses = J(1, `exp_total', .)			//Store analytic standard errors
 			if `dots' > 0 & mod(`R1', `dots') == 0 {
 				display "." _cont
 				local c = `c' + 1
@@ -70,11 +103,10 @@ syntax, data(str) ///
 			}		
 			`version' bsample, `cluster' `strata' `idcluster'
 			quiet `version' `command'
-			*tokenize `expression'
 			foreach NUM of numlist 1/`exp_total' {
 				local current_theta `: word `NUM' of `expression''
 				matrix thetas[1, `NUM'] = `current_theta'
-				local current_se `: word `NUM' of `analytical''	//access specific SE
+				local current_se `: word `NUM' of `analytic''	//access specific SE
 				matrix ses[1, `NUM'] = `current_se'
 			}
 		
@@ -94,7 +126,7 @@ syntax, data(str) ///
 	
 	*** Double Bootstrapping ***
 	else {
-		forvalues R1 = 1/`reps1' {
+		forvalues R1 = 1/`reps' {
 		matrix thetas = J(1, `exp_total', .)		//Stores thetas and t-values
 		if `dots' > 0 & mod(`R1', `dots') == 0 {
 			display "." _cont
@@ -106,16 +138,15 @@ syntax, data(str) ///
 		}		
 		`version' bsample, `cluster' `strata' `idcluster'
 		quiet `version' `command'
-		*tokenize `expression'
 		foreach NUM of numlist 1/`exp_total' {
 			local current_theta `: word `NUM' of `expression''
 			matrix thetas[1, `NUM'] = `current_theta'
 		}
 		
-		matrix innervalues = J(`reps2', `exp_total', .)		//Stores innerthetas
+		matrix innervalues = J(`repsinner', `exp_total', .)		//Stores innerthetas
 		tempfile bsdata
 		quiet save `bsdata', replace
-		forvalues R2 = 1/`reps2' {
+		forvalues R2 = 1/`repsinner' {
 			`version' bsample, `cluster' `strata' `idcluster'
 			quiet `version' `command'
 			foreach NUM of numlist 1/`exp_total' {

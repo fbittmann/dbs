@@ -1,6 +1,6 @@
 cap program drop dbs
 program define dbs, eclass
-	*! version 1.1.0  Felix Bittmann  2022-08-06
+	*! version 1.1.1  Felix Bittmann  2022-08-11
 	version 15
 	
 	*Parse command*
@@ -19,42 +19,42 @@ program define dbs, eclass
 	
 	*Continue with regular syntax*
 	syntax [anything(name=expression)], ///
-		[reps1(integer 100) ///
-		reps2(integer 20) ///
-		level(real 95) ///
+		[reps(integer 50) ///
+		repsinner(integer 25) ///
+		level(cilevel) ///
 		seed(str) ///
 		dots(integer 10) ///
 		graph /// display normality test plots
 		cluster(passthru) ///	resample option
 		idcluster(passthru) ///	resample option
 		strata(passthru) ///	resample option
+		JACKknife ///
 		saving(str) ///
 		nowarn ///
 		PARallel(integer 1) ///
-		analytical(str) ///
+		ANAlytic(str) ///
 		]
 
 	ereturn clear
 	tempfile originaldata
 	quiet save `originaldata', replace
 
-	*** Check level input ***
-	if !(`level' > 0 & `level' < 100) {
-		display as error "The confidence level must be in ]0, 100["
-		exit 100
-	}
 	
 	if `parallel' < 1 {
 		di as error "Enter integer larger than 0 for option parallel.
 		exit 100
 	}
 	
-	*** Analytical standard errors requested ***
-	if "`analytical'" != "" {
-		local reps2 = 0
-	}	
-
-
+	*** Analytic or jackknife standard errors requested ***
+	if "`analytic'" != "" | "`jackknife'" != "" {
+		local repsinner = 0
+	}
+	
+	if "`analytic'" != "" & "`jackknife'" != "" {
+		di as error "Either specify analytic standard errors or the jackknife but not both."
+		exit 197
+	}
+	
 	quiet `version' `command'
 	if e(sample) == 1 {
 		quiet drop if e(sample) != 1
@@ -62,8 +62,7 @@ program define dbs, eclass
 		local N = r(N)
 	}
 	else {
-		quiet count
-		local N = r(N)
+		local N = c(N)
 		if "`warn'" == "" {
 			di as text "Warning:  Because the command invoked does not set " as input "e(sample)" as text ","
 			di as text "          " as input "dbs" as text " has no way to determine which observations are"
@@ -78,7 +77,6 @@ program define dbs, eclass
 	matrix empvalues = J(1, `exp_total', .)				//Stores point estimates
 
 	qui `version' `command'
-	*tokenize `expression'	
 	foreach NUM of numlist 1/`exp_total' {
 		local current_theta `: word `NUM' of `expression''
 		matrix empvalues[1, `NUM'] = `current_theta'
@@ -91,16 +89,16 @@ program define dbs, eclass
 	
 	local outgraphs ""
 	if `dots' > 0 & `parallel' == 1 {
-		display as text "Bootstrap replications (" as result "`reps1' / `reps2'" as text ")"
+		display as text "Bootstrap replications (" as result "`reps' / `repsinner'" as text ")"
 		display "{c -}{c -}{c -}{c -}{c +}{c -}{c -}{c -} 1 {c -}{c -}{c -}" /*
 		*/ "{c +}{c -}{c -}{c -} 2 {c -}{c -}{c -}{c +}{c -}{c -}{c -} 3 {c -}{c -}{c -}" /*
 		*/  "{c +}{c -}{c -}{c -} 4 {c -}{c -}{c -}{c +}{c -}{c -}{c -} 5"
 	}
 	*Run a single thread*
 	if `parallel' == 1 {
-		dbs_resampling, data(`originaldata') reps1(`reps1') reps2(`reps2') command(`command') ///
+		dbs_resampling, data(`originaldata') reps(`reps') repsinner(`repsinner') command(`command') ///
 			totalstats(`exp_total') expression(`expression') totalinstances(1) dots(`dots') seed(`seed') ///
-			`strata' `cluster' `idcluster' analytical(`analytical')
+			`strata' `cluster' `idcluster' analytic(`analytic') jackknife(`jackknife')
 	}
 	
 	*Run multiple threads*
@@ -126,9 +124,9 @@ program define dbs, eclass
 			}
 		}
 		quiet parallel, seed(`allseeds'): ///
-			dbs_resampling, data(`originaldata') reps1(`reps1') reps2(`reps2') command(`command') ///
+			dbs_resampling, data(`originaldata') reps(`reps') repsinner(`repsinner') command(`command') ///
 			totalstats(`exp_total') expression(`expression') totalinstances(`parallel') dots(0) ///
-			`strata' `cluster' `idcluster' analytical(`analytical')
+			`strata' `cluster' `idcluster' analytic(`analytic') jackknife(`jackknife')
 	}
 	
 
@@ -164,13 +162,19 @@ program define dbs, eclass
 			matrix ci_double[2, `NUM'] = empvalues[1, `NUM'] - boot_se[1, `NUM'] * `cent_lower'
 			quiet sfrancia tval`NUM'			//Test for normality of t-values
 			matrix sfrancia[1, `NUM'] = r(p)
-			local temp = sfrancia[1, `NUM']
+			local temp = round(sfrancia[1, `NUM'], 0.00001)
+			if "`temp'" == "0" {
+				local tempp "p < .00001"
+			}
+			else {
+				local tempp "p = `temp'"
+			}
 			
 			if "`graph'" != "" {
 				tempname h`NUM'
 				local outgraphs `outgraphs' `h`NUM''
 				qnorm tval`NUM', name(`h`NUM'', replace) title("``NUM''") nodraw ///
-					note("p=`temp'") ytitle("t-values")
+					note(`tempp') ytitle("t-values")
 			}
 		}
 	}
@@ -181,16 +185,19 @@ program define dbs, eclass
 	di ""
 	di ""
 	di as text "Bootstrap results						Number of obs = " as result "`N'"
-	di as text "									Reps1 = " as result "`reps1'"
-	di as text "									Reps2 = " as result "`reps2'"
+	di as text "								         Reps = " as result "`reps'"
+	di as text "								 Reps (inner) = " as result "`repsinner'"
 	di as text "command: `command'"
-	if "`analytical'" != "" {
-		di as text "Note: analytic standard error(s) provided (shown in brackets)"
+	if "`analytic'" != "" {
+		di as text "analytic standard error(s) provided (shown in brackets)"
+	}
+	if "`jackknife'" != "" {
+		di as text "Jackknife standard errors computed"
 	}
 	foreach NUM of numlist 1/`exp_total' {
-		if "`analytical'" != "" {
+		if "`analytic'" != "" {
 			local current_theta `: word `NUM' of `expression''
-			local current_se_type `: word `NUM' of `analytical''
+			local current_se_type `: word `NUM' of `analytic''
 			di as text "	_bs_`NUM': " as result "`current_theta' [`current_se_type']"
 		}
 		else {
@@ -201,7 +208,9 @@ program define dbs, eclass
 	}
 	di ""
 	di as text "{hline 10}{c TT}{hline 70}"
-	di as text "          {c |} Observed Coef.   Boot. Std. Err.   Bias   SFrancia   [`level'% Conf. Interval]"
+	di as text "          {c |}   Observed   Bootstrap               Shapiro-"
+	di as text "          {c |}     Coef.    Std. Err.      Bias     Francia    [`level'% Conf. Interval]"
+	*di as text "          {c |} Obs. Coef.   Boot. Std. Err.   Bias   SFrancia   [`level'% Conf. Interval]"
 	di as text "{hline 10}{c +}{hline 70}"
 
 	foreach NUM of numlist 1/`exp_total' {
@@ -216,7 +225,7 @@ program define dbs, eclass
 		*di "	_bs_`NUM'	`a'	`b'	`c'	`d'	`e'"
 	}
 	di as text "{hline 10}{c BT}{hline 70}"
-	if `reps1' < 100 {
+	if `reps' < 100 {
 		di as text "Warning:  SFrancia statistic might be unreliable if number of resamples is low."
 	}
 	****************************************************************************
@@ -230,8 +239,8 @@ program define dbs, eclass
 	
 	*Return Scalars*
 	ereturn scalar level = `level'
-	ereturn scalar reps1 = `reps1'
-	ereturn scalar reps2 = `reps2'
+	ereturn scalar reps = `reps'
+	ereturn scalar repsinner = `repsinner'
 	ereturn scalar N = `N'
 	if "`graph'" != "" { 
 		graph combine `outgraphs'

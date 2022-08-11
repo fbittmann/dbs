@@ -18,11 +18,13 @@
 {synoptset 25 tabbed}{...}
 {marker comopt}{synopthdr:options}
 {synoptline}
-{synopt :{opt reps1(#)}}number of outer resamples; default is 100
+{synopt :{opt reps(#)}}number of outer resamples; default is 50
   {p_end}
-{synopt :{opt reps2(#)}}number of inner resamples; default is 20; overwritten if {it:analytic} provided
+{synopt :{opt repsinner(#)}}number of inner resamples; default is 25; overwritten if {it:analytic} or {it:jackknife} provided
   {p_end}
 {synopt :{opt analytic(string)}}providing analytic standard error(s)
+  {p_end}
+{synopt :{opt jackknife}}computing t-values with jackknife standard errors
   {p_end}
 {synopt :{opt level(#)}}confidence level; default is 95
   {p_end}
@@ -62,20 +64,24 @@
 
 {marker comoptd}{it:{dlgtab:Options}}
 
-{phang} {opt reps1(#)} specifies the number of outer resamples to draw.
-The default is 100. For accurate results, 1,000 or even more resamples
+{phang} {opt reps(#)} specifies the number of outer resamples to draw.
+The default is 50. For accurate results, 1,000 or even more resamples
 are recommended. More is always better.
 
-{phang} {opt reps2(#)} specifies the number of inner resamples to draw.
-The default is 20. This is the number of resamples drawn for every outer
-resample. The total number of bootstrap samples is thus reps1 * reps2, so
-be aware of the additional computational burden. The number of inner resamples
-is usually much lower than for inner resamples and values between 20 and 100 are
-probably fine. However, choosing the ideal number is not trivial (Lee & Young 1999).
+{phang} {opt repsinner(#)} specifies the number of inner resamples to draw.
+The default is 25. This is the number of resamples drawn for every outer
+resample. The total number of bootstrap samples is thus reps * repsinner, so
+be aware of the additional computational burden. While no general recommendations can
+be given, 300 or more inner resamples might be required for precise estimates.
 
 {phang} {opt analytic(string)} specifies analytic standard errors for the computation
 of the t-values. This is possible if the command used provides analytic standard errors.
 The order of the analytic standard errors must be identical to the order of expressions in {it:{help exp_list}}.
+The provision of analytic standard errors increases the overall computation speed manifold and 
+often gives highly accurate results.
+
+{phang} {opt jackknife} specifies the usage of {help jackknife} standard errors for the computation of
+the t-values. Specify either {it:repsinner}, {it:analytic} or {it:jackknife}.
 
 {phang} {opt level(#)} specifies the confidence level, as a percentage,
 for confidence intervals. The default is {cmd:level(95)} which produces
@@ -132,7 +138,7 @@ specified the computer might crash!
 {phang2}{cmd:. dbs r(mean) r(p50): summarize mpg, detail}{p_end}
 
 {pstd}Higher precision, diagnostic plots{p_end}
-{phang2}{cmd:. dbs r(mean), reps1(1000) reps2(50) graph: summarize mpg, meanonly}{p_end}
+{phang2}{cmd:. dbs r(mean), reps(1000) repsinner(50) graph: summarize mpg, meanonly}{p_end}
 
 {pstd}Bootstrap regression coefficients{p_end}
 {phang2}{cmd:. dbs _b[weight] _b[_cons]: regress mpg weight}{p_end}
@@ -143,7 +149,7 @@ specified the computer might crash!
 {pstd}Multithreading with {it: parallel}{p_end}
 {phang2}{cmd:. net install parallel, from(https://raw.github.com/gvegayon/parallel/stable/) replace}{p_end}
 {phang2}{cmd:. mata mata mlib index}{p_end}
-{phang2}{cmd:. dbs r(mean), reps1(5000) reps2(100) parallel(4): summarize mpg, meanonly}{p_end}
+{phang2}{cmd:. dbs r(mean), reps(5000) repsinner(100) parallel(4): summarize mpg, meanonly}{p_end}
 
 
 {marker eret}{...}
@@ -154,8 +160,8 @@ specified the computer might crash!
 {p2colset 5 20 20 2}{...}
 {p2col : {cmd:e(N)}} number of observations{p_end}
 {p2col : {cmd:e(level)}} confidence level{p_end}
-{p2col : {cmd:e(reps1)}} number of outer resamples{p_end}
-{p2col : {cmd:e(reps2)}} number of inner resamples{p_end}
+{p2col : {cmd:e(reps)}} number of outer resamples{p_end}
+{p2col : {cmd:e(repsinner)}} number of inner resamples{p_end}
 
 
 {pstd} Matrices:
