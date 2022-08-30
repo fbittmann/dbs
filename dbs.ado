@@ -25,8 +25,8 @@ program define dbs, eclass
 		seed(str) ///
 		dots(integer 10) ///
 		graph /// display normality test plots
-		cluster(passthru) ///	resample option
-		idcluster(passthru) ///	resample option
+		cluster(varlist max=1) ///	resample option
+		idcluster(varlist max=1) ///	resample option
 		strata(passthru) ///	resample option
 		JACKknife ///
 		saving(str) ///
@@ -54,6 +54,7 @@ program define dbs, eclass
 		di as error "Either specify analytic standard errors or the jackknife but not both."
 		exit 197
 	}
+	
 	
 	quiet `version' `command'
 	if e(sample) == 1 {
@@ -98,7 +99,7 @@ program define dbs, eclass
 	if `parallel' == 1 {
 		dbs_resampling, data(`originaldata') reps(`reps') repsinner(`repsinner') command(`command') ///
 			totalstats(`exp_total') expression(`expression') totalinstances(1) dots(`dots') seed(`seed') ///
-			`strata' `cluster' `idcluster' analytic(`analytic') jackknife(`jackknife')
+			`strata' cluster(`cluster') idcluster(`idcluster') analytic(`analytic') jackknife(`jackknife')
 	}
 	
 	*Run multiple threads*
@@ -126,7 +127,7 @@ program define dbs, eclass
 		quiet parallel, seed(`allseeds'): ///
 			dbs_resampling, data(`originaldata') reps(`reps') repsinner(`repsinner') command(`command') ///
 			totalstats(`exp_total') expression(`expression') totalinstances(`parallel') dots(0) ///
-			`strata' `cluster' `idcluster' analytic(`analytic') jackknife(`jackknife')
+			`strata' cluster(`cluster') idcluster(`idcluster') analytic(`analytic') jackknife(`jackknife')
 	}
 	
 

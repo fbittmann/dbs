@@ -13,13 +13,12 @@ syntax, data(str) ///
 	[dots(integer 10) ///
 	seed(str) ///
 	strata(passthru) ///
-	cluster(passthru) ///
-	idcluster(passthru) ///
+	cluster(varlist max=1) ///
+	idcluster(varlist max=1) ///
 	analytic(str) ///
 	jackknife(str) ///
-	]
-	
-	
+	]	
+
 	local version : di "version " string(_caller()) ":"	//get user version
 	
 	quiet use `data', clear		//Load original dataset because parallel splits it up between instances
@@ -45,7 +44,19 @@ syntax, data(str) ///
 	postfile `n`iid'' `allvars' using `t`iid''
 	matrix empvalues = J(1, `exp_total', .)
 	
-
+	
+	
+		
+	*** Cluster options ***
+	if "`cluster'" != "" {
+		local clustervar `cluster'
+		local cluster cluster(`clustervar')
+	}
+	
+	if "`idcluster'" != "" {
+		local idclustervar `idcluster'
+		local idcluster idcluster(`idclustervar')
+	}
 
 
 	quiet `version' `command'
@@ -69,7 +80,16 @@ syntax, data(str) ///
 				}
 			}		
 			`version' bsample, `cluster' `strata' `idcluster'
-			quiet `version' jackknife `expression', `cluster' `idcluster': `command'
+			if "`clustervar'" != "" & "`idclustervar'" != "" {
+				drop `clustervar'
+				gen `clustervar' = `idclustervar'
+				drop `idclustervar'
+				gen `idclustervar' = `clustervar'
+			}
+			if "`cluster'" != "" {
+				qui `version' `command'				//IDK why I need this here but jackknife does not work otherwise
+			}
+			qui `version' jackknife `expression', `cluster' `idcluster': `command'
 			local allres ""
 			foreach NUM of numlist 1/`exp_total' {
 				local current_theta = r(table)[1,`NUM']
@@ -101,7 +121,7 @@ syntax, data(str) ///
 					di ""
 				}
 			}		
-			`version' bsample, `cluster' `strata' `idcluster'
+			`version' bsample, `strata' `cluster' `idcluster'
 			quiet `version' `command'
 			foreach NUM of numlist 1/`exp_total' {
 				local current_theta `: word `NUM' of `expression''
@@ -136,7 +156,13 @@ syntax, data(str) ///
 				di ""
 			}
 		}		
-		`version' bsample, `cluster' `strata' `idcluster'
+		`version' bsample, `strata' `cluster' `idcluster'
+		if "`clustervar'" != "" & "`idclustervar'" != "" {
+			drop `clustervar'
+			gen `clustervar' = `idclustervar'
+			drop `idclustervar'
+			gen `idclustervar' = `clustervar'
+		}
 		quiet `version' `command'
 		foreach NUM of numlist 1/`exp_total' {
 			local current_theta `: word `NUM' of `expression''

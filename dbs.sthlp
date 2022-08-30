@@ -34,6 +34,8 @@
   {p_end}
 {synopt :{opt cluster(varlist)}}variables identifying resampling clusters
   {p_end}
+{synopt :{opt idcluster(newvar)}}create new cluster ID variable
+  {p_end}
 {synopt :{opt saving(filename, ...)}}save results to filename
   {p_end}
 {synopt :{opt dots(#)}}display dots every # replications; default is 10
@@ -66,7 +68,7 @@
 
 {phang} {opt reps(#)} specifies the number of outer resamples to draw.
 The default is 50. For accurate results, 1,000 or even more resamples
-are recommended. More is always better.
+are recommended (Hesterberg 2015). More is always better.
 
 {phang} {opt repsinner(#)} specifies the number of inner resamples to draw.
 The default is 25. This is the number of resamples drawn for every outer
@@ -96,12 +98,15 @@ each stratum.
 {phang} {opt cluster(varlist)} specifies the variables that identify resampling
 clusters. If this option is specified, the sample drawn during each
 replication is a bootstrap sample of clusters.
+
+{phang} {opt idcluster(newvar)} creates a new variable containing a unique identifier
+for each resampled cluster.  This option requires that cluster() also be specified.
 		
 {phang} {opt saving(filename)} creates a Stata data file ({cmd:.dta} file)
 consisting of (for each statistic in exp_list) a variable containing
 the replicates.
 		
-{phang} {opt dots(#)} display dots every # replications. By default,
+{phang} {opt dots(#)} displays dots every # replications. By default,
 one dot character is displayed each ten successful replications.
 When {cmd:dots(0)} is specified, no dots are displayed. No dots are displayed
 when multiple threads are specified.
@@ -123,8 +128,11 @@ before running {cmd:dbs}.
 {phang} {opt parallel} allows the usage of multiple threads to speed up computation.
 This function makes use of the Stata program {it:parallel} (Vega Yon & Quistorff 2019).
 This package must be installed if more than one thread should be used.
-For details refer to the example below. If more threads than actually available threads are
-specified the computer might crash!
+For details refer to the example below. If more threads than actually available are
+specified the computer might crash! If you want to run {it:parallel} with user-written programs,
+these cannot be defined "on the fly" (in the same do file). Save the program in an .ado file and
+place it in the correct folder (for example, if the program is called xcom, then in "/ado/plus/x/".
+Restart Stata afterwards. Otherwise {it:parallel} cannot find the command.
 
 
 {marker ex}{...}
@@ -179,11 +187,6 @@ specified the computer might crash!
 	Hesterberg, T.C. (2015): What Teachers Should Know About the Bootstrap:
 	Resampling in the Undergraduate Statistics Curriculum, in: The American
 	Statistician 69(4): 371-386.
-    {p_end}
-{phang}
-	Lee, S.M.S.; Young, G.A (1999): The effect of Monte Carlo approximationon coverage
-	error of double-bootstrap confidence intervals, in: Journal of the Royal Statistical
-	Society 61(2): 353-366.
     {p_end}
 {phang}
 	Vega Yon, G.G; Quistorff, B. (2019): parallel: A command for parallel computing, in:
