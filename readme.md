@@ -102,7 +102,7 @@ command:  summarize mpg,  meanonly
 ```
 
 
-Using analytical standard errors
+Using analytic standard errors
 ----------------------------
 ``` stata
 . regress mpg weigh
