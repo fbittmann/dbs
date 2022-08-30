@@ -104,7 +104,7 @@ command:  summarize mpg,  meanonly
 
 Using analytical standard errors
 ----------------------------
-
+``` stata
 . regress mpg weigh
 
       Source |       SS           df       MS      Number of obs   =        74
