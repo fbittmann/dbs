@@ -166,7 +166,7 @@ Using dbs with cluster or panel data
 
 . program define iccres, rclass
   1.         syntax [if] [in], id(varlist)
-  2.         mixed vrq `if' `in' || `id': 
+  2.         mixed vrq `if' `in', nostderr || `id':         //No SEs for faster computational speed
   3.         estat icc
   4.         return scalar icc = r(icc2)
   5. end
