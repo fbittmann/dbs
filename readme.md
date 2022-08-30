@@ -102,6 +102,61 @@ command:  summarize mpg,  meanonly
 ```
 
 
+Using analytical standard errors
+----------------------------
+
+. regress mpg weigh
+
+      Source |       SS           df       MS      Number of obs   =        74
+-------------+----------------------------------   F(1, 72)        =    134.62
+       Model |   1591.9902         1   1591.9902   Prob > F        =    0.0000
+    Residual |  851.469256        72  11.8259619   R-squared       =    0.6515
+-------------+----------------------------------   Adj R-squared   =    0.6467
+       Total |  2443.45946        73  33.4720474   Root MSE        =    3.4389
+
+------------------------------------------------------------------------------
+         mpg |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+      weight |  -.0060087   .0005179   -11.60   0.000    -.0070411   -.0049763
+       _cons |   39.44028   1.614003    24.44   0.000     36.22283    42.65774
+------------------------------------------------------------------------------
+
+. matrix list r(table)
+
+r(table)[9,2]
+            weight       _cons
+     b  -.00600869   39.440284
+    se   .00051788   1.6140031
+     t   -11.60251   24.436312
+pvalue   3.798e-18   1.385e-36
+    ll  -.00704106   36.222827
+    ul  -.00497632    42.65774
+    df          72          72
+  crit   1.9934636   1.9934636
+ eform           0           0
+
+. dbs _b[weight] _b[_cons], reps(5000) dots(0) seed(123) analytic(r(table)[2,1] r(table)[2,2]): ///
+>         regress mpg weigh
+
+
+Bootstrap results                                           Number of obs = 74
+                                                                     Reps = 5000
+                                                             Reps (inner) = 0
+command:          regress mpg weigh
+analytic standard error(s) provided (shown in brackets)
+    _bs_1: _b[weight] [r(table)[2,1]]
+    _bs_2: _b[_cons] [r(table)[2,2]]
+
+---------------------------------------------------------------------------------
+          |   Observed   Bootstrap               Shapiro-
+          |     Coef.    Std. Err.      Bias     Francia    [95% Conf. Interval]
+----------+----------------------------------------------------------------------
+   _bs_1  |  -0.0060      0.0006      -0.000       0.000     -0.0075     -0.0048
+   _bs_2  |  39.4403      1.9915      -0.008       0.000     34.8924     44.9830
+---------------------------------------------------------------------------------
+
+
+
 Citation
 ============
 Thanks for citing this software as follows:
