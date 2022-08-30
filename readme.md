@@ -157,6 +157,54 @@ analytic standard error(s) provided (shown in brackets)
 ```
 
 
+Using dbs with cluster or panel data
+-------------------------
+``` stata
+. clear all
+
+. cap program drop iccres
+
+. program define iccres, rclass
+  1.         syntax [if] [in], id(varlist)
+  2.         mixed vrq `if' `in' || `id': 
+  3.         estat icc
+  4.         return scalar icc = r(icc2)
+  5. end
+
+ 
+. 
+. webuse fifeschool, clear
+(School data from Fife, Scotland)
+
+. gen newid = pid
+
+. keep if pid < 50                //Reduce sample for faster computational speed
+(1,981 observations deleted)
+
+. dbs r(icc), reps(100) jackknife seed(123) cluster(pid) idcluster(newid): ///
+>         iccres, id(newid)
+Bootstrap replications (100 / 0)
+----+--- 1 ---+--- 2 ---+--- 3 ---+--- 4 ---+--- 5
+..........
+
+Bootstrap results                                           Number of obs = 1454
+                                                                     Reps = 100
+                                                             Reps (inner) = 0
+command:          iccres, id(newid)
+Jackknife standard errors computed
+    _bs_1: r(icc)
+
+---------------------------------------------------------------------------------
+          |   Observed   Bootstrap               Shapiro-
+          |     Coef.    Std. Err.      Bias     Francia    [95% Conf. Interval]
+----------+----------------------------------------------------------------------
+   _bs_1  |   0.1009      0.0224      -0.004       0.000      0.0648      0.1690
+---------------------------------------------------------------------------------
+
+
+```
+
+
 Citation
 ============
 Thanks for citing this software as follows:
