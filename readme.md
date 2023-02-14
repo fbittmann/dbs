@@ -209,7 +209,7 @@ Citation
 ============
 Thanks for citing this software as follows:
 
-> Bittmann, Felix (2020): dbs: Stata module to compute double bootstrap confidence intervals. Available from: https://github.com/fbittmann/dbs
+> Bittmann, Felix (2020): dbs: Stata module to compute double bootstrap confidence intervals. Available from: https://github.com/fbittmann/dbs. A preprint is available [10.20944/preprints202302.0213.v1](https://www.preprints.org/manuscript/202302.0213/v1).
 
 
 
